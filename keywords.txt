@@ -1,0 +1,55 @@
+#######################################
+# Syntax Coloring Map For GuL_Plantower
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Plantower			KEYWORD1
+PMS1003			    KEYWORD1
+PMS3003			    KEYWORD1
+PMS5003			    KEYWORD1
+PMS5003ST			KEYWORD1
+PMS6003			    KEYWORD1
+PMS7003			    KEYWORD1
+PMS9003M			KEYWORD1
+PMSA003			    KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+read					        KEYWORD2
+poll					        KEYWORD2
+getSensorName                   KEYWORD2
+sleep                           KEYWORD2
+wakeup                          KEYWORD2
+setToActiveReporting            KEYWORD2
+setToPassiveReporting           KEYWORD2
+getPM1_STD                      KEYWORD2
+getPM2_5_STD                    KEYWORD2
+getPM10_STD                     KEYWORD2
+getPM1_ATM                      KEYWORD2
+getPM2_5_ATM                    KEYWORD2
+getPM10_ATM                     KEYWORD2
+getCntBeyond300nm               KEYWORD2
+getCntBeyond500nm               KEYWORD2
+getCntBeyond1000nm              KEYWORD2
+getCntBeyond2500nm              KEYWORD2
+getCntBeyond5000nm              KEYWORD2
+getCntBeyond10000nm             KEYWORD2
+getVersion                      KEYWORD2
+getError                        KEYWORD2
+getFormaldehydeConcentration    KEYWORD2
+getTemperature                  KEYWORD2
+getHumidity                     KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
