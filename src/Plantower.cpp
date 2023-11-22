@@ -39,38 +39,36 @@ namespace GuL
         }
     }
 
-    Plantower::~Plantower() {}
-
     bool Plantower::poll()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
+        std::vector<uint8_t> command = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
         return this->sendFrame(command);
     }
 
     bool Plantower::sleep()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x00, 0xFF, 0xFF};
+        std::vector<uint8_t> command = {0x42, 0x4D, 0xE4, 0x00, 0x00, 0xFF, 0xFF};
         _workMode = Plantower_Working_Mode::SLEEP;
         return this->sendFrame(command);
     }
 
     bool Plantower::wakeup()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x01, 0xFF, 0xFF};
+        std::vector<uint8_t> command = {0x42, 0x4D, 0xE4, 0x00, 0x01, 0xFF, 0xFF};
         _workMode = Plantower_Working_Mode::WAKEUP;
         return this->sendFrame(command);
     }
 
     bool Plantower::setToActiveReporting()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x01, 0xFF, 0xFF};
+        std::vector<uint8_t> command = {0x42, 0x4D, 0xE1, 0x00, 0x01, 0xFF, 0xFF};
         _reportingMode = Plantower_Reporting_Mode::ACTIVE;
         return this->sendFrame(command);
     }
 
     bool Plantower::setToPassiveReporting()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x00, 0xFF, 0xFF};
+        std::vector<uint8_t> command = {0x42, 0x4D, 0xE1, 0x00, 0x00, 0xFF, 0xFF};
         _reportingMode = Plantower_Reporting_Mode::PASSIVE;
         return this->sendFrame(command);
     }
@@ -83,14 +81,15 @@ namespace GuL
             return false; // No data available
         }
 
-        int byte = _stream->read();
-        while (byte > 0)
+        while (_stream->available())
         {
+            int byte = _stream->read();
             switch (_parseStep)
             {
             case WAIT_FOR_NEW_FRAME:
                 if (byte == 0x42)
                 {
+                    _payloadIndex = _payloadStartIndex;
                     _parseStep = CHECK_FRAME_HEADER;
                 }
                 break;
@@ -120,7 +119,7 @@ namespace GuL
             case READ_PAYLOAD:
                 _payloadBuffer[_payloadIndex] = byte;
                 _payloadIndex++;
-                if (_payloadIndex == _frameLength)
+                if (_payloadIndex == _frameLength + _payloadStartIndex)
                 {
                     if (this->checkFrameChecksum())
                     {
@@ -141,24 +140,25 @@ namespace GuL
         return false;
     }
 
-    uint16_t Plantower::calcChecksum(uint8_t *cmd, size_t cnt)
+    uint16_t Plantower::calcChecksum(std::vector<uint8_t> cmd, size_t cnt)
     {
         uint16_t sum = 0;
-        for (uint8_t i = 0; i < cnt; i++)
+        for (size_t i = 0; i < cnt; i++)
         {
             sum += cmd[i];
         }
         return sum;
     }
 
-    bool Plantower::sendFrame(uint8_t *cmd)
+    bool Plantower::sendFrame(std::vector<uint8_t> cmd)
     {
-        uint16_t checksum = this->calcChecksum(cmd, sizeof(cmd) - 2);
-        cmd[sizeof(cmd) - 2] = (checksum >> 8) & 0xFF;
-        cmd[sizeof(cmd) - 1] = checksum & 0xFF;
 
-        size_t bytesSend = _stream->write(cmd, sizeof(cmd));
-        return bytesSend == sizeof(cmd);
+        uint16_t checksum = this->calcChecksum(cmd, cmd.size() - 2);
+        cmd[cmd.size() - 2] = (checksum >> 8) & 0xFF;
+        cmd[cmd.size() - 1] = checksum & 0xFF;
+
+        size_t bytesSend = _stream->write(cmd.data(), cmd.size());
+        return bytesSend == cmd.size();
     }
 
     bool Plantower::expectedFrameLength(size_t framelength)
@@ -176,22 +176,24 @@ namespace GuL
 
     void Plantower::initPayloadBuffer()
     {
-        if (_payloadBuffer == nullptr || sizeof(_payloadBuffer) != _frameLength)
+        if (_payloadBuffer.size() != _frameLength + 4)
         {
-            delete[] _payloadBuffer;
-            _payloadBuffer = new uint8_t[_frameLength + 4]; // The 6 is because of the header and the length
+            _payloadBuffer.clear();
+            _payloadBuffer.resize(_frameLength + 4); // The 4 is because of the header and the length
         }
         _payloadBuffer[0] = 0x42;
         _payloadBuffer[1] = 0x4d;
         _payloadBuffer[2] = _frameLength >> 8;
         _payloadBuffer[3] = _frameLength & 0xFF;
-        _payloadIndex = 4;
+        _payloadStartIndex = 4;
+        _payloadIndex = _payloadStartIndex;
     }
 
     bool Plantower::checkFrameChecksum()
     {
-        uint16_t calcCS = this->calcChecksum(_payloadBuffer, sizeof(_payloadBuffer) - 2);
-        uint16_t recvCS = (_payloadBuffer[_frameLength - 1] << 8) | _payloadBuffer[_frameLength];
+        uint16_t calcCS = this->calcChecksum(_payloadBuffer, _payloadBuffer.size() - 2);
+        uint16_t recvCS = (_payloadBuffer[_payloadBuffer.size() - 2] << 8) | _payloadBuffer[_payloadBuffer.size() - 1];
+
         return recvCS == calcCS;
     }
 

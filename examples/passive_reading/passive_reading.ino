@@ -1,31 +1,30 @@
 #include <PMS7003.h>
 
-GuL::PMS7003 pms(&Serial1);
+GuL::PMS7003 pms(&Serial2);
 
-#define RX1 10
-#define TX1 11
+#define RX2 1
+#define TX2 38
 
-std::string outputFormat = "PM1 (STD) \t= % 3d µg/µ3 \n"
-                           "PM2.5 (STD) \t= % 3d µg/µ3 \n"
-                           "PM10 (STD) \t= % 3d µg/µ3 \n"
-                           "PM1 (STD) \t= % 3d µg/µ3 \n"
-                           "PM2.5 (STD) \t= % 3d µg/µ3 \n"
-                           "PM10 (STD) \t= % 3d µg/µ3 \n"
+std::string outputFormat = "PM1 (STD) \t= % 6d µg/µ3 \n"
+                           "PM2.5 (STD) \t= % 6d µg/µ3 \n"
+                           "PM10 (STD) \t= % 6d µg/µ3 \n"
+                           "PM1 (ATM) \t= % 6d µg/µ3 \n"
+                           "PM2.5 (ATM) \t= % 6d µg/µ3 \n"
+                           "PM10 (ATM) \t= % 6d µg/µ3 \n"
                            "\n"
-                           "PN300 (STD) \t= % 6d #\\0.1 l \n"
-                           "PN500 (STD) \t= % 6d #\\0.1 l \n"
-                           "PN1000 (STD) \t= % 6d #\\0.1 l \n"
-                           "PN2500 (STD) \t= % 6d #\\0.1 l \n"
-                           "PN5000 (STD) \t= % 6d #\\0.1 l \n"
-                           "PN1000 (STD) \t= % 6d #\\0.1 l \n"
+                           "PN300 \t= % 6d #\\0.1 l \n"
+                           "PN500 \t= % 6d #\\0.1 l \n"
+                           "PN1000 \t= % 6d #\\0.1 l \n"
+                           "PN2500 \t= % 6d #\\0.1 l \n"
+                           "PN5000 \t= % 6d #\\0.1 l \n"
+                           "PN1000 \t= % 6d #\\0.1 l \n"
                            "\n";
 
 void setup()
 {
-  Serial.begin(9600, SERIAL_8N1);
+  Serial.begin(9600);
 
-  Serial1.setPins(RX1, TX1);
-  Serial1.begin(9600, SERIAL_8N1);
+  Serial2.begin(9600, SERIAL_8N1, RX2, TX2);
 
   pms.setToPassiveReporting();
 }

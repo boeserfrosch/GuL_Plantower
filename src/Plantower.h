@@ -26,6 +26,7 @@
  */
 
 #include <Arduino.h>
+#include <vector>
 
 #ifndef GUL_PLANTOWER_PLANTOWER_H
 #define GUL_PLANTOWER_PLANTOWER_H
@@ -93,6 +94,7 @@ namespace GuL
     Plantower_Parsing_Steps _parseStep = WAIT_FOR_NEW_FRAME;
 
     uint16_t _payloadIndex = 0;
+    uint16_t _payloadStartIndex = 4;
     bool _gotValidFrame = false;
 
     bool expectedFrameLength(size_t len);
@@ -122,15 +124,16 @@ namespace GuL
       CNT_OF_CHANNELS
     };
     std::string _name = "PLANTOWER";
-    uint8_t *_payloadBuffer = nullptr;
+    std::vector<uint8_t> _payloadBuffer;
+    size_t _bufferLength;
     uint16_t _frameLength = 0;
     int _activeFrameLength = -1;
     int32_t *_data = nullptr;
     Plantower_Working_Mode _workMode = Plantower_Working_Mode::WAKEUP;
     Plantower_Reporting_Mode _reportingMode = Plantower_Reporting_Mode::ACTIVE;
 
-    uint16_t calcChecksum(uint8_t *cmd, size_t cnt);
-    virtual bool sendFrame(uint8_t *cmd);
+    uint16_t calcChecksum(std::vector<uint8_t> cmd, size_t cnt);
+    virtual bool sendFrame(std::vector<uint8_t> cmd);
     virtual void unpackPayload();
     void unpackBasePMData();
     void unpackBasePNData();
