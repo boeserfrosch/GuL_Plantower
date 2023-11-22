@@ -22,7 +22,7 @@ std::string outputFormat = "PM1 (STD) \t= % 3d µg/µ3 \n"
 
 void setup()
 {
-  Serial.begin(9600, SERIAL_8N1);
+  Serial.begin(9600);
 
   Serial1.setPins(RX1, TX1);
   Serial1.begin(9600, SERIAL_8N1);
