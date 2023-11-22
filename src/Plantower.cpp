@@ -39,8 +39,6 @@ namespace GuL
         }
     }
 
-    Plantower::~Plantower() {}
-
     bool Plantower::poll()
     {
         uint8_t command[] = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
