@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/Lehne/Desktop/Code/gul_plantower/include",
-                "C:/Users/Lehne/Desktop/Code/gul_plantower/src",
+                "C:/Users/Lehne/Desktop/Code/GuL_Plantower/include",
+                "C:/Users/Lehne/Desktop/Code/GuL_Plantower/src",
                 "C:/Users/Lehne/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                 "C:/Users/Lehne/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                 "C:/Users/Lehne/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
@@ -238,8 +238,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/Lehne/Desktop/Code/gul_plantower/include",
-                    "C:/Users/Lehne/Desktop/Code/gul_plantower/src",
+                    "C:/Users/Lehne/Desktop/Code/GuL_Plantower/include",
+                    "C:/Users/Lehne/Desktop/Code/GuL_Plantower/src",
                     "C:/Users/Lehne/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                     "C:/Users/Lehne/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                     "C:/Users/Lehne/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",

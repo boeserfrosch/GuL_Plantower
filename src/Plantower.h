@@ -57,7 +57,7 @@ namespace GuL
   class Plantower
   {
   public:
-    Plantower(Stream *stream);
+    Plantower(Stream &stream);
     std::string getSensorName() { return _name; }
 
     bool poll();
@@ -90,7 +90,7 @@ namespace GuL
     float getHumidity();
 
   private:
-    Stream *_stream;
+    Stream &_stream;
     Plantower_Parsing_Steps _parseStep = WAIT_FOR_NEW_FRAME;
 
     uint16_t _payloadIndex = 0;

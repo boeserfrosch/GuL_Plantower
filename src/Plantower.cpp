@@ -30,7 +30,7 @@
 namespace GuL
 {
 
-    Plantower::Plantower(Stream *stream) : _stream(stream)
+    Plantower::Plantower(Stream &stream) : _stream(stream)
     {
         _data = new int32_t[CNT_OF_CHANNELS];
         for (size_t i = 0; i < CNT_OF_CHANNELS; i++)
@@ -76,14 +76,14 @@ namespace GuL
     bool Plantower::read()
     {
 
-        if (_stream->available() == 0)
+        if (_stream.available() == 0)
         {
             return false; // No data available
         }
 
-        while (_stream->available())
+        while (_stream.available())
         {
-            int byte = _stream->read();
+            int byte = _stream.read();
             switch (_parseStep)
             {
             case WAIT_FOR_NEW_FRAME:
@@ -157,7 +157,7 @@ namespace GuL
         cmd[cmd.size() - 2] = (checksum >> 8) & 0xFF;
         cmd[cmd.size() - 1] = checksum & 0xFF;
 
-        size_t bytesSend = _stream->write(cmd.data(), cmd.size());
+        size_t bytesSend = _stream.write(cmd.data(), cmd.size());
         return bytesSend == cmd.size();
     }
 

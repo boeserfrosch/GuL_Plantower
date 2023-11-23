@@ -49,7 +49,7 @@ namespace GuL
     }
 
   public:
-    PMS5003ST(Stream *stream) : Plantower(stream)
+    PMS5003ST(Stream &stream) : Plantower(stream)
     {
       _name = "PMS5003ST";
       _activeFrameLength = 36;

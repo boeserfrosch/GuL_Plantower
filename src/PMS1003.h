@@ -37,8 +37,8 @@ namespace GuL
   {
   private:
   protected:
-    public:
-    PMS1003(Stream *stream) : Plantower(stream)
+  public:
+    PMS1003(Stream &stream) : Plantower(stream)
     {
       _name = "PMS1003";
       _activeFrameLength = 28;

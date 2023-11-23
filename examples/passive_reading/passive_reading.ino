@@ -1,6 +1,6 @@
 #include <PMS7003.h>
 
-GuL::PMS7003 pms(&Serial2);
+GuL::PMS7003 pms(Serial2);
 
 #define RX2 1
 #define TX2 38

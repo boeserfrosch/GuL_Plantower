@@ -73,7 +73,7 @@ namespace GuL
     }
 
   public:
-    PMS9003M(Stream *stream) : Plantower(stream)
+    PMS9003M(Stream &stream) : Plantower(stream)
     {
       _name = "PMS9003M";
     }
