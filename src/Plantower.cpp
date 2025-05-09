@@ -237,7 +237,7 @@ namespace GuL
     int Plantower::getCntBeyond500nm() { return _data[CNT_BEYOND_500_NM_IDX]; }
     int Plantower::getCntBeyond1000nm() { return _data[CNT_BEYOND_1000_NM_IDX]; }
     int Plantower::getCntBeyond2500nm() { return _data[CNT_BEYOND_2500_NM_IDX]; }
-    int Plantower::getCntBeyond5000nm() { return _data[CNT_BEYOND_500_NM_IDX]; }
+    int Plantower::getCntBeyond5000nm() { return _data[CNT_BEYOND_5000_NM_IDX]; }
     int Plantower::getCntBeyond10000nm() { return _data[CNT_BEYOND_10000_NM_IDX]; }
 
     int Plantower::getVersion() { return _data[VERSION_IDX]; }
