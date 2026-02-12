@@ -41,36 +41,36 @@ namespace GuL
 
     bool Plantower::poll()
     {
-        std::vector<uint8_t> command = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
-        return this->sendFrame(command);
+        uint8_t command[] = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
+        return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::sleep()
     {
-        std::vector<uint8_t> command = {0x42, 0x4D, 0xE4, 0x00, 0x00, 0xFF, 0xFF};
+        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x00, 0xFF, 0xFF};
         _workMode = Plantower_Working_Mode::SLEEP;
-        return this->sendFrame(command);
+        return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::wakeup()
     {
-        std::vector<uint8_t> command = {0x42, 0x4D, 0xE4, 0x00, 0x01, 0xFF, 0xFF};
+        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x01, 0xFF, 0xFF};
         _workMode = Plantower_Working_Mode::WAKEUP;
-        return this->sendFrame(command);
+        return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::setToActiveReporting()
     {
-        std::vector<uint8_t> command = {0x42, 0x4D, 0xE1, 0x00, 0x01, 0xFF, 0xFF};
+        uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x01, 0xFF, 0xFF};
         _reportingMode = Plantower_Reporting_Mode::ACTIVE;
-        return this->sendFrame(command);
+        return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::setToPassiveReporting()
     {
-        std::vector<uint8_t> command = {0x42, 0x4D, 0xE1, 0x00, 0x00, 0xFF, 0xFF};
+        uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x00, 0xFF, 0xFF};
         _reportingMode = Plantower_Reporting_Mode::PASSIVE;
-        return this->sendFrame(command);
+        return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::read()
@@ -140,7 +140,7 @@ namespace GuL
         return false;
     }
 
-    uint16_t Plantower::calcChecksum(std::vector<uint8_t> cmd, size_t cnt)
+    uint16_t Plantower::calcChecksum(const uint8_t *cmd, size_t cnt)
     {
         uint16_t sum = 0;
         for (size_t i = 0; i < cnt; i++)
@@ -150,15 +150,19 @@ namespace GuL
         return sum;
     }
 
-    bool Plantower::sendFrame(std::vector<uint8_t> cmd)
+    bool Plantower::sendFrame(uint8_t *cmd, size_t cnt)
     {
+        if (cnt < 2)
+        {
+            return false;
+        }
 
-        uint16_t checksum = this->calcChecksum(cmd, cmd.size() - 2);
-        cmd[cmd.size() - 2] = (checksum >> 8) & 0xFF;
-        cmd[cmd.size() - 1] = checksum & 0xFF;
+        uint16_t checksum = this->calcChecksum(cmd, cnt - 2);
+        cmd[cnt - 2] = (checksum >> 8) & 0xFF;
+        cmd[cnt - 1] = checksum & 0xFF;
 
-        size_t bytesSend = _stream.write(cmd.data(), cmd.size());
-        return bytesSend == cmd.size();
+        size_t bytesSend = _stream.write(cmd, cnt);
+        return bytesSend == cnt;
     }
 
     bool Plantower::expectedFrameLength(size_t framelength)
@@ -176,10 +180,12 @@ namespace GuL
 
     void Plantower::initPayloadBuffer()
     {
-        if (_payloadBuffer.size() != _frameLength + 4)
+        _payloadBufferLength = _frameLength + 4; // The 4 is because of the header and the length
+        if (_payloadBufferLength > MAX_PAYLOAD_LENGTH)
         {
-            _payloadBuffer.clear();
-            _payloadBuffer.resize(_frameLength + 4); // The 4 is because of the header and the length
+            _payloadBufferLength = 0;
+            _parseStep = WAIT_FOR_NEW_FRAME;
+            return;
         }
         _payloadBuffer[0] = 0x42;
         _payloadBuffer[1] = 0x4d;
@@ -191,8 +197,12 @@ namespace GuL
 
     bool Plantower::checkFrameChecksum()
     {
-        uint16_t calcCS = this->calcChecksum(_payloadBuffer, _payloadBuffer.size() - 2);
-        uint16_t recvCS = (_payloadBuffer[_payloadBuffer.size() - 2] << 8) | _payloadBuffer[_payloadBuffer.size() - 1];
+        if (_payloadBufferLength < 2)
+        {
+            return false;
+        }
+        uint16_t calcCS = this->calcChecksum(_payloadBuffer, _payloadBufferLength - 2);
+        uint16_t recvCS = (_payloadBuffer[_payloadBufferLength - 2] << 8) | _payloadBuffer[_payloadBufferLength - 1];
 
         return recvCS == calcCS;
     }

@@ -26,7 +26,6 @@
  */
 
 #include <Arduino.h>
-#include <vector>
 
 #ifndef GUL_PLANTOWER_PLANTOWER_H
 #define GUL_PLANTOWER_PLANTOWER_H
@@ -58,7 +57,7 @@ namespace GuL
   {
   public:
     Plantower(Stream &stream);
-    std::string getSensorName() { return _name; }
+    const char *getSensorName() { return _name; }
 
     bool poll();
     virtual bool read();
@@ -123,17 +122,21 @@ namespace GuL
       HUMIDITY_IDX,
       CNT_OF_CHANNELS
     };
-    std::string _name = "PLANTOWER";
-    std::vector<uint8_t> _payloadBuffer;
-    size_t _bufferLength;
+    static const size_t MAX_FRAME_LENGTH = 28;
+    static const size_t PAYLOAD_HEADER_LENGTH = 4;
+    static const size_t MAX_PAYLOAD_LENGTH = MAX_FRAME_LENGTH + PAYLOAD_HEADER_LENGTH;
+
+    const char *_name = "PLANTOWER";
+    uint8_t _payloadBuffer[MAX_PAYLOAD_LENGTH];
+    size_t _payloadBufferLength = 0;
     uint16_t _frameLength = 0;
     int _activeFrameLength = -1;
     int32_t *_data = nullptr;
     Plantower_Working_Mode _workMode = Plantower_Working_Mode::WAKEUP;
     Plantower_Reporting_Mode _reportingMode = Plantower_Reporting_Mode::ACTIVE;
 
-    uint16_t calcChecksum(std::vector<uint8_t> cmd, size_t cnt);
-    virtual bool sendFrame(std::vector<uint8_t> cmd);
+    uint16_t calcChecksum(const uint8_t *cmd, size_t cnt);
+    virtual bool sendFrame(uint8_t *cmd, size_t cnt);
     virtual void unpackPayload();
     void unpackBasePMData();
     void unpackBasePNData();

@@ -1,2 +1,28 @@
+### PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
 
+### Build artifacts
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+*.map
+
+### Logs
+*.log
+
+### OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+### IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+### Misc
 .development
