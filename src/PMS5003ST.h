@@ -26,6 +26,7 @@
  */
 
 #include "Plantower.h"
+#include <cstdio>
 
 #ifndef GUL_PLANTOWER_PMS5003ST_H
 #define GUL_PLANTOWER_PMS5003ST_H
@@ -48,11 +49,37 @@ namespace GuL
       _data[ERROR_IDX] = _payloadBuffer[37];
     }
 
-  public:
-    PMS5003ST(Stream &stream) : Plantower(stream)
+    void unpackPayload() override
+    {
+      if (_frameLength == 36)
+      {
+        this->unpackActiveProtocolPayload();
+        return;
+      }
+
+      Plantower::unpackPayload();
+    }
+
+    void initSensorSpecifics()
     {
       _name = "PMS5003ST";
       _activeFrameLength = 36;
+    }
+
+  public:
+#if defined(ARDUINO)
+    PMS5003ST(HardwareSerial &stream) : Plantower(stream)
+    {
+      initSensorSpecifics();
+    }
+    PMS5003ST(Stream &stream) : Plantower(stream)
+    {
+      initSensorSpecifics();
+    }
+#endif
+    PMS5003ST(UARTInterface &stream) : Plantower(stream)
+    {
+      initSensorSpecifics();
     }
   };
 

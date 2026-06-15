@@ -37,14 +37,29 @@ namespace GuL
   {
   private:
   protected:
-  public:
-    PMS3003(Stream &stream) : Plantower(stream)
+    void initSensorSpecifics()
     {
       _name = "PMS3003";
       _activeFrameLength = 20;
     }
-  };
 
+  public:
+#if defined(ARDUINO)
+    PMS3003(HardwareSerial &stream) : Plantower(stream)
+    {
+      initSensorSpecifics();
+    }
+    PMS3003(Stream &stream) : Plantower(stream)
+    {
+      initSensorSpecifics();
+    }
+#endif
+
+    PMS3003(UARTInterface &stream) : Plantower(stream)
+    {
+      initSensorSpecifics();
+    }
+  };
 }; // namespace GuL
 
-#endif // !IDS_REAL_DEVICE_PMS3003_H
+#endif // !GUL_PLANTOWER_PMS3003_H

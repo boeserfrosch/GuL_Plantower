@@ -1,76 +1,17 @@
 #include <unity.h>
 #include <Plantower.h>
 
-class FakeStream : public Stream
+#include "../mock/MockUartInterface.h"
+
+class PlantowerTest : public GuL::Plantower
 {
 public:
-    FakeStream(const uint8_t *data, size_t length)
-        : _data(data), _length(length), _index(0), _outputLen(0)
+    PlantowerTest(UARTInterface &uart) : Plantower(uart) {}
+    static uint16_t publicCalcChecksum(const uint8_t *cmd, size_t cnt)
     {
+        return calcChecksum(cmd, cnt);
     }
-
-    int available() override
-    {
-        return (_index < _length) ? (int)(_length - _index) : 0;
-    }
-
-    int read() override
-    {
-        if (_index >= _length)
-        {
-            return -1;
-        }
-        return _data[_index++];
-    }
-
-    int peek() override
-    {
-        if (_index >= _length)
-        {
-            return -1;
-        }
-        return _data[_index];
-    }
-
-    size_t write(uint8_t value) override
-    {
-        if (_outputLen < sizeof(_output))
-        {
-            _output[_outputLen++] = value;
-        }
-        return 1;
-    }
-
-    size_t write(const uint8_t *buffer, size_t size) override
-    {
-        _outputLen = (size > sizeof(_output)) ? sizeof(_output) : size;
-        for (size_t i = 0; i < _outputLen; i++)
-        {
-            _output[i] = buffer[i];
-        }
-        return size;
-    }
-
-    const uint8_t *getOutput() const { return _output; }
-    size_t getOutputLen() const { return _outputLen; }
-
-private:
-    const uint8_t *_data;
-    size_t _length;
-    size_t _index;
-    uint8_t _output[64];
-    size_t _outputLen;
 };
-
-static uint16_t calcChecksum(const uint8_t *data, size_t count)
-{
-    uint16_t sum = 0;
-    for (size_t i = 0; i < count; i++)
-    {
-        sum += data[i];
-    }
-    return sum;
-}
 
 static void buildFrame(uint8_t *frame, size_t frameLength)
 {
@@ -134,7 +75,7 @@ static void buildFrame(uint8_t *frame, size_t frameLength)
         frame[29] = 0x00;
     }
 
-    const uint16_t checksum = calcChecksum(frame, payloadLength - 2);
+    const uint16_t checksum = PlantowerTest::publicCalcChecksum(frame, payloadLength - 2);
     frame[payloadLength - 2] = (uint8_t)((checksum >> 8) & 0xFF);
     frame[payloadLength - 1] = (uint8_t)(checksum & 0xFF);
 }
@@ -145,7 +86,8 @@ void test_read_frame_parses_values()
     uint8_t frame[frameLength + 4];
     buildFrame(frame, frameLength);
 
-    FakeStream stream(frame, sizeof(frame));
+    MockUartInterface stream;
+    stream.writeToReadBuffer(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     bool gotFrame = false;
@@ -181,7 +123,8 @@ void test_read_rejects_bad_checksum()
 
     frame[frameLength + 3] ^= 0xFF;
 
-    FakeStream stream(frame, sizeof(frame));
+    MockUartInterface stream;
+    stream.writeToReadBuffer(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_FALSE(sensor.read());
@@ -202,7 +145,8 @@ void test_read_skips_garbage_before_frame()
         buffer[i + 3] = frame[i];
     }
 
-    FakeStream stream(buffer, sizeof(buffer));
+    MockUartInterface stream;
+    stream.writeToReadBuffer(buffer, sizeof(buffer));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.read());
@@ -215,7 +159,8 @@ void test_read_length20_parses_base_pm_only()
     uint8_t frame[frameLength + 4];
     buildFrame(frame, frameLength);
 
-    FakeStream stream(frame, sizeof(frame));
+    MockUartInterface stream;
+    stream.writeToReadBuffer(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.read());
@@ -232,8 +177,7 @@ void test_read_length20_parses_base_pm_only()
 
 void test_poll_writes_checksum()
 {
-    uint8_t empty[1] = {0};
-    FakeStream stream(empty, 0);
+    MockUartInterface stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.poll());
@@ -248,10 +192,37 @@ void test_poll_writes_checksum()
     TEST_ASSERT_EQUAL_HEX8(0x71, out[6]);
 }
 
+void test_checksum_calculation()
+{
+    uint8_t data[] = {0x01, 0x02, 0x03, 0x04};
+    uint16_t checksum = PlantowerTest::publicCalcChecksum(data, sizeof(data));
+    TEST_ASSERT_EQUAL_HEX16(0x0A, checksum);
+    TEST_ASSERT_EQUAL_HEX8(0x00, (checksum >> 8) & 0xFF);
+    TEST_ASSERT_EQUAL_HEX8(0x0A, checksum & 0xFF);
+    uint8_t data2[] = {0xFF, 0xFF, 0xFF, 0xFF};
+    checksum = PlantowerTest::publicCalcChecksum(data2, sizeof(data2));
+    TEST_ASSERT_EQUAL_HEX16(0x3FC, checksum);
+    uint8_t data3[] = {0x00, 0x00, 0x00, 0x00};
+    checksum = PlantowerTest::publicCalcChecksum(data3, sizeof(data3));
+    TEST_ASSERT_EQUAL_HEX16(0x00, checksum);
+    uint8_t data4[] = {0x12, 0x34, 0x56, 0x78};
+    checksum = PlantowerTest::publicCalcChecksum(data4, sizeof(data4));
+    TEST_ASSERT_EQUAL_HEX16(0x114, checksum);
+    uint8_t data5[] = {0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+    checksum = PlantowerTest::publicCalcChecksum(data5, sizeof(data5));
+    TEST_ASSERT_EQUAL_HEX16(0x9F6, checksum);
+    uint8_t data6[] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    checksum = PlantowerTest::publicCalcChecksum(data6, sizeof(data6));
+    TEST_ASSERT_EQUAL_HEX16(0x01, checksum);
+    uint8_t data7[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+    checksum = PlantowerTest::publicCalcChecksum(data7, sizeof(data7));
+    TEST_ASSERT_EQUAL_HEX16(0xFF0, checksum);
+}
+
 void setUp() {}
 void tearDown() {}
 
-int main(int argc, char **argv)
+int processTests()
 {
     UNITY_BEGIN();
     RUN_TEST(test_read_frame_parses_values);
@@ -259,5 +230,22 @@ int main(int argc, char **argv)
     RUN_TEST(test_read_skips_garbage_before_frame);
     RUN_TEST(test_read_length20_parses_base_pm_only);
     RUN_TEST(test_poll_writes_checksum);
+    RUN_TEST(test_checksum_calculation);
     return UNITY_END();
 }
+
+#if defined(ARDUINO)
+void setup()
+{
+    Serial.begin(115200);
+    delay(2000);
+    processTests();
+}
+
+void loop() {}
+#else
+int main(int argc, char *argv[])
+{
+    return processTests();
+}
+#endif

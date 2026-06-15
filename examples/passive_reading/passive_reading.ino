@@ -51,7 +51,7 @@ void loop()
   Serial.println(" #\\0.1 l");
 
   Serial.print("PN500 \t= ");
-  Serial.print(pms.getCntBeyond5000nm());
+  Serial.print(pms.getCntBeyond500nm());
   Serial.println(" #\\0.1 l");
 
   Serial.print("PN1000 \t= ");
@@ -66,7 +66,7 @@ void loop()
   Serial.print(pms.getCntBeyond5000nm());
   Serial.println(" #\\0.1 l");
 
-  Serial.print("PN1000 \t= ");
+  Serial.print("PN10000 \t= ");
   Serial.print(pms.getCntBeyond10000nm());
   Serial.println(" #\\0.1 l");
 

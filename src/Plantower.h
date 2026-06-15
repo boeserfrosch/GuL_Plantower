@@ -25,7 +25,11 @@
  *
  */
 
+#include "UARTInterface.h"
+
+#ifdef ARDUINO
 #include <Arduino.h>
+#endif
 
 #ifndef GUL_PLANTOWER_PLANTOWER_H
 #define GUL_PLANTOWER_PLANTOWER_H
@@ -56,7 +60,11 @@ namespace GuL
   class Plantower
   {
   public:
+    Plantower(UARTInterface &uart);
+#ifdef ARDUINO
+    Plantower(HardwareSerial &stream);
     Plantower(Stream &stream);
+#endif
     const char *getSensorName() { return _name; }
 
     bool poll();
@@ -89,7 +97,12 @@ namespace GuL
     float getHumidity();
 
   private:
-    Stream &_stream;
+    void init();
+#ifdef ARDUINO
+    ArduinoHardwareSerialWrapper _hardwareSerialWrapper;
+    StreamWrapper _streamWrapper;
+#endif
+    UARTInterface *_uart = nullptr;
     Plantower_Parsing_Steps _parseStep = WAIT_FOR_NEW_FRAME;
 
     uint16_t _payloadIndex = 0;
@@ -122,7 +135,7 @@ namespace GuL
       HUMIDITY_IDX,
       CNT_OF_CHANNELS
     };
-    static const size_t MAX_FRAME_LENGTH = 28;
+    static const size_t MAX_FRAME_LENGTH = 36;
     static const size_t PAYLOAD_HEADER_LENGTH = 4;
     static const size_t MAX_PAYLOAD_LENGTH = MAX_FRAME_LENGTH + PAYLOAD_HEADER_LENGTH;
 
@@ -131,11 +144,11 @@ namespace GuL
     size_t _payloadBufferLength = 0;
     uint16_t _frameLength = 0;
     int _activeFrameLength = -1;
-    int32_t *_data = nullptr;
+    int32_t _data[CNT_OF_CHANNELS];
     Plantower_Working_Mode _workMode = Plantower_Working_Mode::WAKEUP;
     Plantower_Reporting_Mode _reportingMode = Plantower_Reporting_Mode::ACTIVE;
 
-    uint16_t calcChecksum(const uint8_t *cmd, size_t cnt);
+    static uint16_t calcChecksum(const uint8_t *cmd, size_t cnt);
     virtual bool sendFrame(uint8_t *cmd, size_t cnt);
     virtual void unpackPayload();
     void unpackBasePMData();

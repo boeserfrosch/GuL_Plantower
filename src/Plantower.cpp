@@ -26,64 +26,78 @@
  */
 
 #include "Plantower.h"
-
 namespace GuL
 {
-
-    Plantower::Plantower(Stream &stream) : _stream(stream)
+    Plantower::Plantower(UARTInterface &uart) : _uart(&uart)
     {
-        _data = new int32_t[CNT_OF_CHANNELS];
-        for (size_t i = 0; i < CNT_OF_CHANNELS; i++)
+        init();
+    }
+
+#ifdef ARDUINO
+    Plantower::Plantower(HardwareSerial &stream) : _hardwareSerialWrapper(stream), _uart(&_hardwareSerialWrapper)
+    {
+        init();
+    }
+
+    Plantower::Plantower(Stream &stream) : _streamWrapper(stream), _uart(&_streamWrapper)
+    {
+        init();
+    }
+#endif
+
+    void Plantower::init()
+    {
+        for (size_t i = 0; i < PLANTOWER_DATA_IDX::CNT_OF_CHANNELS; i++)
         {
             _data[i] = -1;
         }
     }
 
-    bool Plantower::poll()
+    bool Plantower::setToPassiveReporting()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
-        return this->sendFrame(command, sizeof(command));
-    }
-
-    bool Plantower::sleep()
-    {
-        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x00, 0xFF, 0xFF};
-        _workMode = Plantower_Working_Mode::SLEEP;
-        return this->sendFrame(command, sizeof(command));
-    }
-
-    bool Plantower::wakeup()
-    {
-        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x01, 0xFF, 0xFF};
-        _workMode = Plantower_Working_Mode::WAKEUP;
+        uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x00, 0xFF, 0xFF};
         return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::setToActiveReporting()
     {
         uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x01, 0xFF, 0xFF};
-        _reportingMode = Plantower_Reporting_Mode::ACTIVE;
         return this->sendFrame(command, sizeof(command));
     }
 
-    bool Plantower::setToPassiveReporting()
+    bool Plantower::sleep()
     {
-        uint8_t command[] = {0x42, 0x4D, 0xE1, 0x00, 0x00, 0xFF, 0xFF};
-        _reportingMode = Plantower_Reporting_Mode::PASSIVE;
+        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x00, 0xFF, 0xFF};
+        return this->sendFrame(command, sizeof(command));
+    }
+
+    bool Plantower::wakeup()
+    {
+        uint8_t command[] = {0x42, 0x4D, 0xE4, 0x00, 0x01, 0xFF, 0xFF};
+        return this->sendFrame(command, sizeof(command));
+    }
+
+    bool Plantower::poll()
+    {
+        if (_uart == nullptr)
+        {
+            return false;
+        }
+
+        uint8_t command[] = {0x42, 0x4D, 0xE2, 0x00, 0x00, 0xFF, 0xFF};
         return this->sendFrame(command, sizeof(command));
     }
 
     bool Plantower::read()
     {
-
-        if (_stream.available() == 0)
+        if (_uart == nullptr || _uart->available() == 0)
         {
             return false; // No data available
         }
 
-        while (_stream.available())
+        while (_uart->available())
         {
-            int byte = _stream.read();
+            int byte = _uart->read();
             switch (_parseStep)
             {
             case WAIT_FOR_NEW_FRAME:
@@ -161,7 +175,7 @@ namespace GuL
         cmd[cnt - 2] = (checksum >> 8) & 0xFF;
         cmd[cnt - 1] = checksum & 0xFF;
 
-        size_t bytesSend = _stream.write(cmd, cnt);
+        size_t bytesSend = _uart ? _uart->write(cmd, cnt) : 0;
         return bytesSend == cnt;
     }
 
@@ -173,9 +187,9 @@ namespace GuL
             // PMS5003, PMS7003, PMSA003 sends frames with \
             // length 2*13+2
             // For newer hardware there can be another frame with a length of 4
-            return framelength == 20 | framelength == 28 | framelength == 4;
+            return framelength == 20 || framelength == 28 || framelength == 4;
         }
-        return framelength == _activeFrameLength;
+        return framelength == _activeFrameLength || framelength == 4;
     }
 
     void Plantower::initPayloadBuffer()
@@ -253,7 +267,7 @@ namespace GuL
     int Plantower::getVersion() { return _data[VERSION_IDX]; }
     int Plantower::getError() { return _data[ERROR_IDX]; }
 
-    float Plantower::getFormaldehydeConcentration() { return (float)_data[FORMALDEHYDE_CONCENTRATION_IDX] / 1000; };
+    float Plantower::getFormaldehydeConcentration() { return (float)_data[FORMALDEHYDE_CONCENTRATION_IDX] / 1000.0f; };
     float Plantower::getTemperature() { return (float)_data[TEMPERATURE_IDX] / 10; };
     float Plantower::getHumidity() { return (float)_data[HUMIDITY_IDX] / 10; };
 
