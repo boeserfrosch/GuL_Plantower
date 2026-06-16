@@ -112,7 +112,7 @@ void test_read_rejects_bad_checksum()
     frame[frameLength + 3] = 0xFF; // Corrupt the checksum
 
     MockUartInterface stream;
-    stream.writeToReadBuffer(frame, sizeof(frame));
+    stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_FALSE(sensor.read());

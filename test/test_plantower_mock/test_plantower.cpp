@@ -87,7 +87,7 @@ void test_read_frame_parses_values()
     buildFrame(frame, frameLength);
 
     MockUartInterface stream;
-    stream.writeToReadBuffer(frame, sizeof(frame));
+    stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     bool gotFrame = false;
@@ -124,7 +124,7 @@ void test_read_rejects_bad_checksum()
     frame[frameLength + 3] ^= 0xFF;
 
     MockUartInterface stream;
-    stream.writeToReadBuffer(frame, sizeof(frame));
+    stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_FALSE(sensor.read());
@@ -146,7 +146,7 @@ void test_read_skips_garbage_before_frame()
     }
 
     MockUartInterface stream;
-    stream.writeToReadBuffer(buffer, sizeof(buffer));
+    stream.setInput(buffer, sizeof(buffer));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.read());
@@ -160,7 +160,7 @@ void test_read_length20_parses_base_pm_only()
     buildFrame(frame, frameLength);
 
     MockUartInterface stream;
-    stream.writeToReadBuffer(frame, sizeof(frame));
+    stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.read());
@@ -219,6 +219,95 @@ void test_checksum_calculation()
     TEST_ASSERT_EQUAL_HEX16(0xFF0, checksum);
 }
 
+void test_failure_states_are_set()
+{
+    MockUartInterface stream;
+    GuL::Plantower sensor(stream);
+
+    // No data available
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::NO_BYTES_AVAILABLE, sensor.getLastFailureReason());
+
+    // Bad checksum
+    uint8_t frame[32];
+    buildFrame(frame, 28);
+    frame[30] ^= 0xFF;
+    stream.setInput(frame, sizeof(frame));
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::CHECKSUM_FAILURE, sensor.getLastFailureReason());
+
+    // Invalid frame length
+    uint8_t badFrame[32];
+    buildFrame(badFrame, 32);
+    badFrame[2] = 0x00; // High byte of length
+    badFrame[3] = 0x00; // And low byte of length, making it 0 - which is unexpected for a valid frame
+    stream.setInput(badFrame, sizeof(badFrame));
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INVALID_FRAME_LENGTH, sensor.getLastFailureReason());
+
+    // UART write failure
+    stream.setInput(frame, sizeof(frame));
+    stream.disableWrites();
+    TEST_ASSERT_FALSE(sensor.poll());
+    TEST_ASSERT_EQUAL(GuL::Plantower::UART_WRITE_FAILURE, sensor.getLastFailureReason());
+    stream.enableWrites();
+
+    // Incomplete frame
+    uint8_t incompleteFrame[3];
+    incompleteFrame[0] = 0x42;
+    incompleteFrame[1] = 0x4D;
+    incompleteFrame[2] = 0x00;
+    stream.setInput(incompleteFrame, sizeof(incompleteFrame));
+
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+
+    // Missing bytes (payload length exceeds buffer)
+    uint8_t longFrame[40];
+    buildFrame(longFrame, 36);
+    stream.setInput(longFrame, sizeof(longFrame));
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INVALID_FRAME_LENGTH, sensor.getLastFailureReason());
+}
+
+void test_read_proceeds_after_incomplete_frame()
+{
+    uint8_t buffer[40];
+    const size_t frameLength = 28;
+    buildFrame(buffer, frameLength);
+
+    MockUartInterface stream;
+    // First provide an incomplete frame (only first header byte)
+    stream.setInput(buffer, 1);
+
+    GuL::Plantower sensor(stream);
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+    stream.appendToInput(buffer + 1, 1); // Now append the next byte
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+    stream.appendToInput(buffer + 2, 1); // Now append the length high byte
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+    stream.appendToInput(buffer + 3, 1); // Now append the length low byte
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+    // Now each payload byte without the checksum
+    for (size_t i = 4; i < frameLength + 2; i++)
+    {
+        stream.appendToInput(buffer + i, 1);
+        TEST_ASSERT_FALSE(sensor.read());
+        TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+    }
+    // Finally append the checksum bytes one by one
+    stream.appendToInput(buffer + frameLength + 2, 1);
+    TEST_ASSERT_FALSE(sensor.read());
+    TEST_ASSERT_EQUAL(GuL::Plantower::INCOMPLETE_FRAME, sensor.getLastFailureReason());
+    stream.appendToInput(buffer + frameLength + 3, 1);
+    TEST_ASSERT_TRUE(sensor.read());
+    TEST_ASSERT_EQUAL(11, sensor.getPM1_STD());
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -231,6 +320,8 @@ int processTests()
     RUN_TEST(test_read_length20_parses_base_pm_only);
     RUN_TEST(test_poll_writes_checksum);
     RUN_TEST(test_checksum_calculation);
+    RUN_TEST(test_failure_states_are_set);
+    RUN_TEST(test_read_proceeds_after_incomplete_frame);
     return UNITY_END();
 }
 
