@@ -90,8 +90,10 @@ namespace GuL
 
     bool Plantower::read()
     {
+        _lastFailureReason = NO_FAILURE;
         if (_uart == nullptr || _uart->available() == 0)
         {
+            _lastFailureReason = NO_BYTES_AVAILABLE;
             return false; // No data available
         }
 
@@ -124,6 +126,7 @@ namespace GuL
 
                 if (!this->expectedFrameLength(_frameLength))
                 {
+                    _lastFailureReason = INVALID_FRAME_LENGTH;
                     _parseStep = WAIT_FOR_NEW_FRAME;
                     break;
                 }
@@ -140,6 +143,10 @@ namespace GuL
                         this->unpackPayload();
                         _gotValidFrame = true;
                     }
+                    else
+                    {
+                        _lastFailureReason = CHECKSUM_FAILURE;
+                    }
                     _parseStep = WAIT_FOR_NEW_FRAME;
                 }
                 break;
@@ -150,6 +157,10 @@ namespace GuL
         {
             _gotValidFrame = false;
             return true;
+        }
+        if (_lastFailureReason == NO_FAILURE)
+        {
+            _lastFailureReason = INCOMPLETE_FRAME;
         }
         return false;
     }
@@ -176,6 +187,10 @@ namespace GuL
         cmd[cnt - 1] = checksum & 0xFF;
 
         size_t bytesSend = _uart ? _uart->write(cmd, cnt) : 0;
+        if (bytesSend != cnt)
+        {
+            _lastFailureReason = UART_WRITE_FAILURE;
+        }
         return bytesSend == cnt;
     }
 
@@ -198,6 +213,7 @@ namespace GuL
         if (_payloadBufferLength > MAX_PAYLOAD_LENGTH)
         {
             _payloadBufferLength = 0;
+            _lastFailureReason = INVALID_FRAME_LENGTH;
             _parseStep = WAIT_FOR_NEW_FRAME;
             return;
         }
@@ -213,6 +229,7 @@ namespace GuL
     {
         if (_payloadBufferLength < 2)
         {
+            _lastFailureReason = NO_BYTES_AVAILABLE;
             return false;
         }
         uint16_t calcCS = this->calcChecksum(_payloadBuffer, _payloadBufferLength - 2);

@@ -63,7 +63,7 @@ void test_read_and_parse_frame()
     auto cs = PlantowerTest::publicCalcChecksum(frame, 38);
     frame[38] = (uint8_t)((cs >> 8) & 0xFF);
     frame[39] = (uint8_t)(cs & 0xFF);
-    stream.writeToReadBuffer(frame, sizeof(frame));
+    stream.setInput(frame, sizeof(frame));
 
     TEST_ASSERT_TRUE(sensor.poll());
     TEST_ASSERT_TRUE(sensor.read());

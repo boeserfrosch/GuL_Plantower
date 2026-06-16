@@ -8,9 +8,11 @@ public:
     int available() override { return (int)(readBufferLen - readBufferIndex); }
     int peek() override { return (readBufferIndex < readBufferLen) ? readBuffer[readBufferIndex] : -1; }
     int read() override { return (readBufferIndex < readBufferLen) ? readBuffer[readBufferIndex++] : -1; }
-    size_t write(uint8_t byte) override { return (outputLen < sizeof(output)) ? (output[outputLen++] = byte, 1) : 0; }
+    size_t write(uint8_t byte) override { return writeEnable && (outputLen < sizeof(output)) ? (output[outputLen++] = byte, 1) : 0; }
     size_t write(const uint8_t *buffer, size_t size) override
     {
+        if (!writeEnable)
+            return 0;
         size_t copyLen = (size + outputLen <= sizeof(output)) ? size : (sizeof(output) - outputLen);
         for (size_t i = 0; i < copyLen; i++)
         {
@@ -21,23 +23,35 @@ public:
     }
     const uint8_t *getOutput() const { return output; }
     size_t getOutputLen() const { return outputLen; }
-    void writeToReadBuffer(const uint8_t *data, size_t len)
+    void appendToInput(const uint8_t *data, size_t len)
     {
-        size_t copyLen = (len + readBufferWriteIndex < sizeof(readBuffer)) ? len : sizeof(readBuffer) - readBufferWriteIndex;
+        size_t copyLen = (len + readBufferLen <= sizeof(readBuffer)) ? len : (sizeof(readBuffer) - readBufferLen);
         for (size_t i = 0; i < copyLen; i++)
         {
-            readBuffer[i + readBufferWriteIndex] = data[i];
+            readBuffer[readBufferLen + i] = data[i];
         }
-        readBufferWriteIndex += copyLen;
-        readBufferLen = readBufferWriteIndex;
-        readBufferIndex = 0;
+        readBufferLen += copyLen; // Update the length of valid data in the buffer
     }
+    void setInput(const uint8_t *data, size_t len)
+    {
+        size_t copyLen = (len <= sizeof(readBuffer)) ? len : (sizeof(readBuffer));
+        for (size_t i = 0; i < copyLen; i++)
+        {
+            readBuffer[i] = data[i];
+        }
+        readBufferLen = copyLen; // Set the length of valid data in the buffer
+        readBufferIndex = 0;     // Reset index to start of buffer for reading
+    }
+
+    void enableWrites() { writeEnable = true; }
+    void disableWrites() { writeEnable = false; }
 
 private:
     uint8_t readBuffer[128];
-    size_t readBufferWriteIndex = 0;
     size_t readBufferLen = 0;
     size_t readBufferIndex = 0;
     uint8_t output[128];
     size_t outputLen = 0;
+
+    bool writeEnable = true;
 };

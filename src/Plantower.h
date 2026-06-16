@@ -60,6 +60,17 @@ namespace GuL
   class Plantower
   {
   public:
+    enum FailureReason
+    {
+      NO_FAILURE = 0,
+      CHECKSUM_FAILURE,
+      INVALID_FRAME_LENGTH,
+      UART_WRITE_FAILURE,
+      INCOMPLETE_FRAME,
+      NO_BYTES_AVAILABLE,
+      MISSING_BYTES
+    };
+
     Plantower(UARTInterface &uart);
 #ifdef ARDUINO
     Plantower(HardwareSerial &stream);
@@ -95,6 +106,8 @@ namespace GuL
     float getFormaldehydeConcentration();
     float getTemperature();
     float getHumidity();
+
+    FailureReason getLastFailureReason() { return _lastFailureReason; }
 
   private:
     void init();
@@ -147,6 +160,7 @@ namespace GuL
     int32_t _data[CNT_OF_CHANNELS];
     Plantower_Working_Mode _workMode = Plantower_Working_Mode::WAKEUP;
     Plantower_Reporting_Mode _reportingMode = Plantower_Reporting_Mode::ACTIVE;
+    FailureReason _lastFailureReason = NO_FAILURE;
 
     static uint16_t calcChecksum(const uint8_t *cmd, size_t cnt);
     virtual bool sendFrame(uint8_t *cmd, size_t cnt);
