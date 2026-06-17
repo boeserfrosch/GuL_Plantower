@@ -25,7 +25,7 @@
  *
  */
 
-#include "UARTInterface.h"
+#include <GuL_HAL.h>
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -36,6 +36,24 @@
 
 namespace GuL
 {
+  namespace
+  {
+#ifdef ARDUINO
+    class ArduinoHardwareSerialAdapter : public GuL::HAL::ISerial
+    {
+      HardwareSerial &_stream;
+
+    public:
+      ArduinoHardwareSerialAdapter(HardwareSerial &stream) : _stream(stream) {}
+      int available() override { return _stream.available(); }
+      int peek() override { return _stream.peek(); }
+      int read() override { return _stream.read(); }
+      size_t write(uint8_t byte) override { return _stream.write(byte); }
+      size_t write(const uint8_t *buffer, size_t size) override { return _stream.write(buffer, size); }
+    };
+#endif
+  }
+
   enum Plantower_Working_Mode
   {
     SLEEP,
@@ -71,7 +89,7 @@ namespace GuL
       MISSING_BYTES
     };
 
-    Plantower(UARTInterface &uart);
+    Plantower(GuL::HAL::ISerial &uart);
 #ifdef ARDUINO
     Plantower(HardwareSerial &stream);
     Plantower(Stream &stream);
@@ -112,10 +130,9 @@ namespace GuL
   private:
     void init();
 #ifdef ARDUINO
-    ArduinoHardwareSerialWrapper _hardwareSerialWrapper;
-    StreamWrapper _streamWrapper;
+    ArduinoHardwareSerialAdapter _hardwareSerialAdapter;
 #endif
-    UARTInterface *_uart = nullptr;
+    GuL::HAL::ISerial *_uart = nullptr;
     Plantower_Parsing_Steps _parseStep = WAIT_FOR_NEW_FRAME;
 
     uint16_t _payloadIndex = 0;

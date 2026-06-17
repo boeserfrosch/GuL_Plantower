@@ -49,12 +49,8 @@ namespace GuL
     {
       initSensorSpecifics();
     }
-    PMSA003(Stream &stream) : Plantower(stream)
-    {
-      initSensorSpecifics();
-    }
 #endif
-    PMSA003(UARTInterface &stream) : Plantower(stream)
+    PMSA003(GuL::HAL::ISerial &stream) : Plantower(stream)
     {
       initSensorSpecifics();
     }

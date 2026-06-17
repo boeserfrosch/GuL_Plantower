@@ -1,5 +1,5 @@
 #include <unity.h>
-#include "../mock/MockUartInterface.h"
+#include "../mock/MockSerial.h"
 #include <PMS5003ST.h>
 
 class PlantowerTest : public GuL::Plantower
@@ -16,7 +16,7 @@ void tearDown() {}
 
 void test_read_and_parse_frame()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::PMS5003ST sensor(stream);
 
     uint8_t frame[40];

@@ -1,12 +1,12 @@
 #include <unity.h>
 #include <Plantower.h>
 
-#include "../mock/MockUartInterface.h"
+#include "../mock/MockSerial.h"
 
 class PlantowerTest : public GuL::Plantower
 {
 public:
-    PlantowerTest(UARTInterface &uart) : Plantower(uart) {}
+    PlantowerTest(GuL::HAL::ISerial &uart) : Plantower(uart) {}
     static uint16_t publicCalcChecksum(const uint8_t *cmd, size_t cnt)
     {
         return calcChecksum(cmd, cnt);
@@ -86,7 +86,7 @@ void test_read_frame_parses_values()
     uint8_t frame[frameLength + 4];
     buildFrame(frame, frameLength);
 
-    MockUartInterface stream;
+    MockSerial stream;
     stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
@@ -123,7 +123,7 @@ void test_read_rejects_bad_checksum()
 
     frame[frameLength + 3] ^= 0xFF;
 
-    MockUartInterface stream;
+    MockSerial stream;
     stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
@@ -145,7 +145,7 @@ void test_read_skips_garbage_before_frame()
         buffer[i + 3] = frame[i];
     }
 
-    MockUartInterface stream;
+    MockSerial stream;
     stream.setInput(buffer, sizeof(buffer));
     GuL::Plantower sensor(stream);
 
@@ -159,7 +159,7 @@ void test_read_length20_parses_base_pm_only()
     uint8_t frame[frameLength + 4];
     buildFrame(frame, frameLength);
 
-    MockUartInterface stream;
+    MockSerial stream;
     stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 
@@ -177,7 +177,7 @@ void test_read_length20_parses_base_pm_only()
 
 void test_poll_writes_checksum()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.poll());
@@ -221,7 +221,7 @@ void test_checksum_calculation()
 
 void test_failure_states_are_set()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     // No data available
@@ -276,7 +276,7 @@ void test_read_proceeds_after_incomplete_frame()
     const size_t frameLength = 28;
     buildFrame(buffer, frameLength);
 
-    MockUartInterface stream;
+    MockSerial stream;
     // First provide an incomplete frame (only first header byte)
     stream.setInput(buffer, 1);
 

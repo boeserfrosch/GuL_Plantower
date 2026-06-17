@@ -83,17 +83,9 @@ namespace GuL
     {
       initSensorSpecifics();
     }
-    PMS9003M(Stream &stream) : Plantower(stream)
-    {
-      initSensorSpecifics();
-    }
 #endif
 
-    PMS9003M(UARTInterface &stream) : Plantower(stream)
-    {
-      initSensorSpecifics();
-    }
-    PMS9003M(Stream &stream) : Plantower(stream)
+    PMS9003M(GuL::HAL::ISerial &stream) : Plantower(stream)
     {
       initSensorSpecifics();
     }

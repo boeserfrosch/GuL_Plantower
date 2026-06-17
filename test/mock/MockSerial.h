@@ -1,9 +1,9 @@
-#include "UARTInterface.h"
+#include <ISerial.h>
 
-class MockUartInterface : public UARTInterface
+class MockSerial : public GuL::HAL::ISerial
 {
 public:
-    MockUartInterface() : readBufferLen(0), readBufferIndex(0), outputLen(0) {}
+    MockSerial() : readBufferLen(0), readBufferIndex(0), outputLen(0) {}
 
     int available() override { return (int)(readBufferLen - readBufferIndex); }
     int peek() override { return (readBufferIndex < readBufferLen) ? readBuffer[readBufferIndex] : -1; }

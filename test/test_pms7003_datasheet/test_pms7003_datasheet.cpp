@@ -1,14 +1,14 @@
 #include <PMS7003.h>
 
 #include <unity.h>
-#include "../mock/MockUartInterface.h"
+#include "../mock/MockSerial.h"
 
 void setUp() {}
 void tearDown() {}
 
 void test_sleep_writes_command()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.sleep());
@@ -24,7 +24,7 @@ void test_sleep_writes_command()
 
 void test_wakeup_writes_command()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.wakeup());
@@ -41,7 +41,7 @@ void test_wakeup_writes_command()
 
 void test_setToPassiveReporting_writes_command()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.setToPassiveReporting());
@@ -58,7 +58,7 @@ void test_setToPassiveReporting_writes_command()
 
 void test_setToActiveReporting_writes_command()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.setToActiveReporting());
@@ -75,7 +75,7 @@ void test_setToActiveReporting_writes_command()
 
 void test_poll_writes_checksum()
 {
-    MockUartInterface stream;
+    MockSerial stream;
     GuL::Plantower sensor(stream);
 
     TEST_ASSERT_TRUE(sensor.poll());
@@ -111,7 +111,7 @@ void test_read_rejects_bad_checksum()
     frame[frameLength + 2] = 0x71; // Checksum for the above data
     frame[frameLength + 3] = 0xFF; // Corrupt the checksum
 
-    MockUartInterface stream;
+    MockSerial stream;
     stream.setInput(frame, sizeof(frame));
     GuL::Plantower sensor(stream);
 

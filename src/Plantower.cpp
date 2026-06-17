@@ -28,21 +28,17 @@
 #include "Plantower.h"
 namespace GuL
 {
-    Plantower::Plantower(UARTInterface &uart) : _uart(&uart)
+    Plantower::Plantower(GuL::HAL::ISerial &uart) : _uart(&uart)
     {
         init();
     }
 
 #ifdef ARDUINO
-    Plantower::Plantower(HardwareSerial &stream) : _hardwareSerialWrapper(stream), _uart(&_hardwareSerialWrapper)
+    Plantower::Plantower(HardwareSerial &stream) : _hardwareSerialAdapter(stream), _uart(&_hardwareSerialAdapter)
     {
         init();
     }
 
-    Plantower::Plantower(Stream &stream) : _streamWrapper(stream), _uart(&_streamWrapper)
-    {
-        init();
-    }
 #endif
 
     void Plantower::init()
