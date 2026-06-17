@@ -1,6 +1,6 @@
 {
     "name": "GuL_Plantower",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "category": "Sensors",
     "description": "A library for interfacing with Plantower particulate matter sensors. PMS1003, PMS3003, PM5003, PM5003ST, PM6003, PM7003, PM9003M and PMA003 are supported at the moment.",
     "keywords": "Plantower, PM2.5, sensor, air quality, PMS1003, PMS3003, PM5003, PM5003ST, PM6003, PM7003, PM9003M, PMA003",

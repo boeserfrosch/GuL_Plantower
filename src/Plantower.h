@@ -36,20 +36,21 @@
 
 namespace GuL
 {
-  namespace
+  namespace PlantowerHelper
   {
 #ifdef ARDUINO
     class ArduinoHardwareSerialAdapter : public GuL::HAL::ISerial
     {
-      HardwareSerial &_stream;
+      HardwareSerial *_stream;
 
     public:
-      ArduinoHardwareSerialAdapter(HardwareSerial &stream) : _stream(stream) {}
-      int available() override { return _stream.available(); }
-      int peek() override { return _stream.peek(); }
-      int read() override { return _stream.read(); }
-      size_t write(uint8_t byte) override { return _stream.write(byte); }
-      size_t write(const uint8_t *buffer, size_t size) override { return _stream.write(buffer, size); }
+      ArduinoHardwareSerialAdapter() = default;
+      ArduinoHardwareSerialAdapter(HardwareSerial &stream) : _stream(&stream) {}
+      int available() override { return _stream->available(); }
+      int peek() override { return _stream->peek(); }
+      int read() override { return _stream->read(); }
+      size_t write(uint8_t byte) override { return _stream->write(byte); }
+      size_t write(const uint8_t *buffer, size_t size) override { return _stream->write(buffer, size); }
     };
 #endif
   }
@@ -130,7 +131,7 @@ namespace GuL
   private:
     void init();
 #ifdef ARDUINO
-    ArduinoHardwareSerialAdapter _hardwareSerialAdapter;
+    PlantowerHelper::ArduinoHardwareSerialAdapter _hardwareSerialAdapter;
 #endif
     GuL::HAL::ISerial *_uart = nullptr;
     Plantower_Parsing_Steps _parseStep = WAIT_FOR_NEW_FRAME;
